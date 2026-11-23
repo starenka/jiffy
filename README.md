@@ -22,7 +22,7 @@ It is a personal, sideloaded tool (you build and install it yourself; it is not 
 - Authorized keys are managed in the app: enter a GitHub handle (fetches `https://github.com/HANDLE.keys`) or paste public keys. Imports are snapshots: re-import a handle to replace its keys, including when it now has none. Failed imports leave saved keys unchanged. With no keys configured, nobody can log in.
 - Advertises itself as `jiffy-<id>` (`_ssh._tcp`, port 2222; `<id>` = first 6 letters/digits of the host key fingerprint) over mDNS only while sharing, so the Linux side can find it. It reveals just that id, the IP and the port.
 - Persistent host key generated on the phone at first start (fingerprint shown in the app), followed by a build line (git revision, `-dirty` if uncommitted, build time) so you can tell which build is installed.
-- A read-only virtual root lists only enabled shares: `/Music`, `/Photos` (DCIM), `/Documents`, `/Downloads`. Tap a path to edit it; only saving the resolved folder changes what is shared.
+- A read-only virtual root lists only enabled shares: `/Photos` (DCIM), `/Music`, `/Documents`, `/Downloads`, plus any folders you add with *Add folder* (pick a name and an absolute path; added folders can be removed again, which never deletes files). Tap a path to edit it; only saving the resolved folder changes what is shared.
 - Runs as a foreground service with wake and Wi-Fi locks. Folder and key changes apply to new connections only. Stop sharing to disconnect existing clients.
 
 ## Requirements

@@ -12,15 +12,66 @@ import java.nio.file.Paths
 object Config {
     const val PORT = 2222
 
-    class Share(val name: String, val defaultPath: String, val defaultEnabled: Boolean)
+    /** [custom] shares are added by the owner in the app and can be removed; built-in ones cannot. */
+    class Share(val name: String, val defaultPath: String, val defaultEnabled: Boolean, val custom: Boolean = false)
 
-    /** Add more shares here; virtual name -> default real directory. */
+    /** Built-in shares, in display order; virtual name -> default real directory. */
     val SHARES = listOf(
-        Share("Music", "/storage/emulated/0/Music", true),
         Share("Photos", "/storage/emulated/0/DCIM", true),
+        Share("Music", "/storage/emulated/0/Music", true),
         Share("Documents", "/storage/emulated/0/Documents", true),
         Share("Downloads", "/storage/emulated/0/Download", true),
     )
+
+    /** Why [name] can't be used as a share name (it becomes a top-level path segment), or null if it can. */
+    internal fun checkShareName(name: String, taken: Collection<String>): String? = when {
+        name.isEmpty() -> "Enter a name"
+        name != name.trim() -> "No leading or trailing spaces"
+        name.length > 64 -> "Name is too long (max 64)"
+        name.startsWith(".") -> "Name can't start with a dot"
+        name.any { it == '/' || it == '\\' || it.isISOControl() } -> "Name can't contain / \\ or control characters"
+        taken.any { it.equals(name, ignoreCase = true) } -> "A share with this name already exists"
+        else -> null
+    }
+
+    internal fun encodeCustom(shares: List<Pair<String, String>>): String {
+        val arr = JSONArray()
+        for ((name, path) in shares) arr.put(JSONObject().put("name", name).put("path", path))
+        return arr.toString()
+    }
+
+    /** Parses stored custom shares, dropping anything malformed, invalid, or clashing with [reserved] names or each other. */
+    internal fun decodeCustom(json: String, reserved: Collection<String>): List<Pair<String, String>> {
+        val arr = try { JSONArray(json) } catch (e: Exception) { return emptyList() }
+        val out = mutableListOf<Pair<String, String>>()
+        for (i in 0 until arr.length()) {
+            val o = arr.optJSONObject(i) ?: continue
+            val name = o.optString("name"); val path = o.optString("path")
+            if (path.isBlank() || checkShareName(name, reserved + out.map { it.first }) != null) continue
+            out += name to path
+        }
+        return out
+    }
+
+    private fun customRaw(c: Context) = decodeCustom(prefs(c).getString("custom_shares", "[]") ?: "[]", SHARES.map { it.name })
+    private fun saveCustom(c: Context, list: List<Pair<String, String>>) =
+        prefs(c).edit().putString("custom_shares", encodeCustom(list)).apply()
+
+    /** Built-in shares followed by the owner's custom shares, in the order added. */
+    fun shares(c: Context): List<Share> = SHARES + customRaw(c).map { (name, path) -> Share(name, path, true, custom = true) }
+
+    /** Validates the name, then (like [confirmPath]) saves only a confirmed resolved folder. Returns the resolved folder. */
+    fun addShare(c: Context, name: String, draft: String): String {
+        checkShareName(name, shares(c).map { it.name })?.let { throw IllegalArgumentException(it) }
+        return confirmDirectory(draft) { saveCustom(c, customRaw(c) + (name to it)) }
+    }
+
+    /** Removes a custom share's configuration. The folder and its files are untouched. */
+    fun removeShare(c: Context, s: Share) {
+        if (!s.custom) return
+        saveCustom(c, customRaw(c).filterNot { it.first == s.name })
+        prefs(c).edit().remove("share.${s.name}.enabled").remove("share.${s.name}.path").apply()
+    }
 
     private fun prefs(c: Context) = c.getSharedPreferences("config", Context.MODE_PRIVATE)
 
@@ -78,5 +129,5 @@ object Config {
 
     /** Enabled shares as virtual name -> real path, snapshotted per SSH session. */
     fun enabledShares(c: Context): Map<String, Path> =
-        SHARES.filter { isEnabled(c, it) }.associate { it.name to Paths.get(path(c, it)) }
+        shares(c).filter { isEnabled(c, it) }.associate { it.name to Paths.get(path(c, it)) }
 }

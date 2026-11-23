@@ -27,6 +27,7 @@ class MainActivity : Activity() {
     private lateinit var keyInput: EditText
     private lateinit var addBtn: Button
     private lateinit var keyList: LinearLayout
+    private lateinit var shareList: LinearLayout
 
     private fun dp(v: Int) = (v * resources.displayMetrics.density).toInt()
 
@@ -62,20 +63,11 @@ class MainActivity : Activity() {
         col.addView(storage, MATCH_PARENT, WRAP_CONTENT)
 
         col.addView(header("Shared folders"))
-        for (s in Config.SHARES) {
-            val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
-            row.addView(CheckBox(this).apply {
-                text = "/${s.name}"; isChecked = Config.isEnabled(this@MainActivity, s)
-                setOnCheckedChangeListener { _, v -> Config.setEnabled(this@MainActivity, s, v) }
-            }, dp(120), WRAP_CONTENT)
-            row.addView(Button(this).apply {
-                text = Config.path(this@MainActivity, s); isAllCaps = false
-                typeface = Typeface.MONOSPACE; setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
-                setOnClickListener { editShare(s, this) }
-            }, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
-            col.addView(row, MATCH_PARENT, WRAP_CONTENT)
-        }
-        col.addView(note("Tap a folder path to change it. Changes apply to new connections."))
+        shareList = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        col.addView(shareList, MATCH_PARENT, WRAP_CONTENT)
+        renderShares()
+        col.addView(Button(this).apply { text = "Add folder"; setOnClickListener { addShareDialog() } }, MATCH_PARENT, WRAP_CONTENT)
+        col.addView(note("Tap a folder path to change it. Added folders can be removed (files are never deleted). Changes apply to new connections."))
 
         col.addView(header("Authorized keys"))
         keyInput = EditText(this).apply {
@@ -106,6 +98,69 @@ class MainActivity : Activity() {
     private fun note(t: String) = TextView(this).apply { text = t; setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f); typeface = Typeface.MONOSPACE }
 
     private fun toast(t: String) = Toast.makeText(this, t, Toast.LENGTH_LONG).show()
+
+    private fun renderShares() {
+        shareList.removeAllViews()
+        for (s in Config.shares(this)) {
+            val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
+            row.addView(CheckBox(this).apply {
+                text = "/${s.name}"; isChecked = Config.isEnabled(this@MainActivity, s)
+                maxLines = 2; ellipsize = android.text.TextUtils.TruncateAt.END
+                setOnCheckedChangeListener { _, v -> Config.setEnabled(this@MainActivity, s, v) }
+            }, dp(120), WRAP_CONTENT)
+            row.addView(Button(this).apply {
+                text = Config.path(this@MainActivity, s); isAllCaps = false
+                typeface = Typeface.MONOSPACE; setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
+                setOnClickListener { editShare(s, this) }
+            }, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
+            if (s.custom) row.addView(Button(this).apply {
+                text = "×"; setTextSize(TypedValue.COMPLEX_UNIT_SP, 18f); minWidth = 0; minimumWidth = dp(48)
+                setOnClickListener { confirmRemove(s) }
+            })
+            shareList.addView(row, MATCH_PARENT, WRAP_CONTENT)
+        }
+    }
+
+    private fun confirmRemove(share: Config.Share) {
+        AlertDialog.Builder(this).setTitle("Stop sharing /${share.name}?")
+            .setMessage("Only the share is removed. No files are deleted. Existing connections keep working until they end.")
+            .setNegativeButton("Cancel", null)
+            .setPositiveButton("Remove") { _, _ -> Config.removeShare(this, share); renderShares() }.show()
+    }
+
+    private fun addShareDialog() {
+        fun field(hint: String, text: String = "") = EditText(this).apply {
+            setSingleLine(); this.hint = hint; setText(text)
+            inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS or android.text.InputType.TYPE_TEXT_VARIATION_URI
+        }
+        val name = field("Name, e.g. Podcasts")
+        val path = field("Absolute folder path", "/storage/emulated/0/")
+        val form = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(20), dp(8), dp(20), 0); addView(name); addView(path) }
+        val dialog = AlertDialog.Builder(this).setTitle("Add a shared folder").setView(form)
+            .setNegativeButton("Cancel", null).setPositiveButton("Add", null).show()
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+            val resolved = try {
+                Config.addShare(this, name.text.toString().trim(), path.text.toString())
+            } catch (e: IllegalArgumentException) {
+                name.error = e.message; return@setOnClickListener
+            } catch (e: InvalidPathException) {
+                path.error = e.reason; return@setOnClickListener
+            } catch (e: NotDirectoryException) {
+                path.error = "Not a directory"; return@setOnClickListener
+            } catch (e: IOException) {
+                path.error = "Cannot open folder: ${e.message}"; return@setOnClickListener
+            } catch (e: SecurityException) {
+                path.error = "Permission denied"; return@setOnClickListener
+            }
+            if (resolved != path.text.toString()) {
+                path.setText(resolved)
+                path.error = "Resolved folder shown. Tap Add to confirm."
+                return@setOnClickListener
+            }
+            renderShares()
+            dialog.dismiss()
+        }
+    }
 
     private fun editShare(share: Config.Share, button: Button) {
         val draft = EditText(this).apply {

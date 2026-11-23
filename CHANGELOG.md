@@ -6,7 +6,11 @@ Release notes on GitHub are taken from the matching section below, so every rele
 
 ## [Unreleased]
 
+### Added
+- Add your own shared folders in the app (*Add folder*: a name and an absolute path). They appear as `/Name` next to the built-in shares and can be enabled, edited and removed; removing one never deletes files.
+
 ### Changed
+- The built-in shares are listed as Photos, Music, Documents, Downloads (Photos and Music swapped).
 - `just smoke` is now read-only: it lists the shares and downloads a small file over sftp and scp instead of uploading a temp file to `/Music`.
 
 ## [1.0.0] - 2026-11-23

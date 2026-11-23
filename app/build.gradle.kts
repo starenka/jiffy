@@ -62,6 +62,7 @@ android {
 
 dependencies {
     testImplementation("junit:junit:4.13.2")
+    testImplementation("org.json:json:20240303") // Android's org.json is stubbed in JVM unit tests
     implementation("org.apache.sshd:sshd-core:2.15.0")
     implementation("org.apache.sshd:sshd-sftp:2.15.0")
     implementation("org.apache.sshd:sshd-mina:2.15.0")
