@@ -4,10 +4,11 @@ How signed APKs are built and published. Releases are produced by GitHub Actions
 
 ## How it works
 
+0. Before tagging, move the `## [Unreleased]` entries in `CHANGELOG.md` under a new `## [1.2.3] - YYYY-MM-DD` heading, commit and push.
 1. You push a tag such as `v1.2.3`.
 2. The workflow decodes the keystore from repository secrets, runs the unit tests and builds `assembleRelease`, signed with your key.
 3. The version is taken from the tag: `versionName` = `1.2.3`, `versionCode` = `major*10000 + minor*100 + patch` (here `10203`). The code must increase with every release, so never reuse or lower a version.
-4. The APK is attached as `jiffy-v1.2.3.apk` to a new GitHub Release with generated notes.
+4. The APK is attached as `jiffy-v1.2.3.apk` to a new GitHub Release with the matching `CHANGELOG.md` section as release notes. The run fails early if that section is missing or empty.
 
 Android only installs an update over an existing install if it is signed with the same key and has a higher `versionCode`. That is why the keystore matters.
 
@@ -55,6 +56,8 @@ gh secret list                          # confirm all four exist
 Rotate or update a secret by running the same command again.
 
 ## Publishing a release
+
+Update `CHANGELOG.md` first (see above), then:
 
 ```sh
 git tag v1.0.0

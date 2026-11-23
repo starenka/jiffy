@@ -13,6 +13,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Release notes from CHANGELOG.md
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          awk -v v="${TAG#v}" '/^## \[/{p = (index($0, "## [" v "]") == 1)} p' CHANGELOG.md | tail -n +2 > "$RUNNER_TEMP/notes.md"
+          grep -q '[^[:space:]]' "$RUNNER_TEMP/notes.md" || { echo "No CHANGELOG.md entry for ${TAG#v}"; exit 1; }
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -40,4 +46,4 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.ref_name }}
-        run: gh release create "$TAG" "jiffy-$TAG.apk" --generate-notes --title "$TAG"
+        run: gh release create "$TAG" "jiffy-$TAG.apk" --notes-file "$RUNNER_TEMP/notes.md" --title "$TAG"
