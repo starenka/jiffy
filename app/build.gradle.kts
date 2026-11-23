@@ -48,7 +48,7 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions { jvmTarget = "17" }
+    kotlin { compilerOptions { jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17) } }
     packaging {
         resources {
             excludes += setOf(
@@ -62,11 +62,11 @@ android {
 
 dependencies {
     testImplementation("junit:junit:4.13.2")
-    testImplementation("org.json:json:20240303") // Android's org.json is stubbed in JVM unit tests
-    implementation("org.apache.sshd:sshd-core:2.15.0")
-    implementation("org.apache.sshd:sshd-sftp:2.15.0")
-    implementation("org.apache.sshd:sshd-mina:2.15.0")
-    implementation("org.bouncycastle:bcprov-jdk18on:1.80")
-    implementation("org.bouncycastle:bcpkix-jdk18on:1.80")
+    testImplementation("org.json:json:20260814") // Android's org.json is stubbed in JVM unit tests
+    implementation("org.apache.sshd:sshd-core:2.20.1")
+    implementation("org.apache.sshd:sshd-sftp:2.20.1")
+    implementation("org.apache.sshd:sshd-mina:2.20.1")
+    implementation("org.bouncycastle:bcprov-jdk18on:1.87")
+    implementation("org.bouncycastle:bcpkix-jdk18on:1.87")
     implementation("org.slf4j:slf4j-android:1.7.36")
 }

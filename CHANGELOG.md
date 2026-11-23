@@ -6,6 +6,9 @@ Release notes on GitHub are taken from the matching section below, so every rele
 
 ## [Unreleased]
 
+### Changed
+- Updated dependencies: Apache MINA SSHD 2.15.0 → 2.20.1, BouncyCastle 1.80 → 1.87, Kotlin 2.1.21 → 2.4.21, and the GitHub Actions used in CI and releases.
+
 ### Security
 - The app no longer allows cleartext (HTTP) traffic; it only ever needed HTTPS (GitHub key import).
 - The Gradle wrapper is regenerated with the official Gradle 8.13 (it was an 8.10.2 jar); GitHub Actions are pinned to commit SHAs and kept current by Dependabot.

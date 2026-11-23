@@ -233,7 +233,7 @@ object VProvider : FileSystemProvider() {
     override fun <A : BasicFileAttributes> readAttributes(path: Path, type: Class<A>, vararg options: LinkOption): A {
         if (depth(path) == 0) {
             if (!type.isInstance(RootAttributes)) throw UnsupportedOperationException(type.name)
-            return type.cast(RootAttributes)
+            return type.cast(RootAttributes)!!
         }
         val x = r(path); return prov(x).readAttributes(x, type, *options)
     }
