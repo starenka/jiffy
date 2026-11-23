@@ -6,6 +6,8 @@ Release notes on GitHub are taken from the matching section below, so every rele
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-11-23
+
 ### Added
 - Add your own shared directories in the app (*Add directory*: a name and an absolute path). They appear as `/Name` next to the built-in shares and can be enabled, edited and removed; removing one never deletes files.
 
