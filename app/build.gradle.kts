@@ -67,6 +67,6 @@ dependencies {
     implementation("org.apache.sshd:sshd-sftp:2.15.0")
     implementation("org.apache.sshd:sshd-mina:2.15.0")
     implementation("org.bouncycastle:bcprov-jdk18on:1.80")
-    implementation("org.bouncycastle:bcpkix-jdk18on:1.80")
+    implementation("org.bouncycastle:bcpkix-jdk18on:1.87")
     implementation("org.slf4j:slf4j-android:1.7.36")
 }
