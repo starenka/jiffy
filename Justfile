@@ -113,18 +113,23 @@ stayon state="true":
 sftp ip=shell(phone_ip):
     sftp -P {{port}} {{ip}}
 
-# Non-interactive smoke test: list root and Music, then upload/download/delete a temp file
+# Read-only smoke test: list the shares, download a small file from Music via sftp and scp, check they match
 [group("use")]
 smoke ip=shell(phone_ip):
     #!/usr/bin/env bash
     set -euo pipefail
-    t=$(mktemp -d); echo "smoke $(date -Is)" > "$t/smoke.txt"
-    printf 'ls -l\nls -l Music\n' | sftp -P {{port}} -o BatchMode=yes {{ip}} | awk 'NR<=8'
-    scp -P {{port}} "$t/smoke.txt" {{ip}}:/Music/.smoke.txt
-    scp -P {{port}} {{ip}}:/Music/.smoke.txt "$t/back.txt"
-    cmp "$t/smoke.txt" "$t/back.txt" && echo "scp round-trip OK"
-    printf 'rm /Music/.smoke.txt\n' | sftp -P {{port}} -o BatchMode=yes {{ip}} >/dev/null
-    rm -rf "$t"
+    t=$(mktemp -d); trap 'rm -rf "$t"' EXIT
+    sftp_ls() { printf 'ls -l %s\n' "$1" | sftp -P {{port}} -o BatchMode=yes {{ip}} 2>/dev/null | grep -E '^[d-]'; }
+    echo "shares:"; sftp_ls . | awk '{print "  " $NF}'
+    # smallest non-empty file (<= 5 MB, plain name) at the top of /Music
+    pick=$(sftp_ls Music | awk '/^-/ && $5 > 0 && $5 <= 5242880 { n=$0; sub(/^([^ ]+ +){8}/, "", n); sub(/^Music\//, "", n); if (n ~ /^[A-Za-z0-9._-]+$/) print $5, n }' | sort -n | head -1)
+    [ -n "$pick" ] || { echo "smoke: no small plain-named file in /Music to download"; exit 1; }
+    size=${pick%% *}; name=${pick#* }
+    echo "checking $name ($size bytes)"
+    printf 'get Music/%s %s/a\n' "$name" "$t" | sftp -P {{port}} -o BatchMode=yes {{ip}} >/dev/null 2>&1
+    scp -q -P {{port}} "{{ip}}:/Music/$name" "$t/b"
+    [ "$(stat -c %s "$t/a")" = "$size" ] || { echo "smoke: size mismatch (listing $size)"; exit 1; }
+    cmp "$t/a" "$t/b" && echo "sftp/scp download OK (sha256 $(sha256sum "$t/a" | cut -c1-16)...)"
 
 # Mount all shares at $MNT; or a single one: just mount 192.168.0.50 Music
 [group("use")]

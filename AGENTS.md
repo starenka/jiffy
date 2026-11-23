@@ -5,7 +5,7 @@ Guidance for AI coding agents (and humans) working on jiffy: an Android app that
 ## Policies
 
 - **Never push unless explicitly asked.** This covers `git push` (branches and tags), force-pushes, and anything else that publishes to the remote (creating or editing GitHub releases, setting secrets). Commit locally and stop. An earlier approval to push does not carry over to later changes.
-- **Never modify, delete, move, rename, overwrite or create any shared file on the phone**, over SFTP/scp/sshfs or over adb (no `adb push`, and no `rm`/`mv`/`cp`/`touch`/redirects via `adb shell` on storage; `adb pull` and read-only listing are fine). That includes everything under the shared folders and the rest of `/sdcard`. Test with read-only operations only (list, read, `stat`, download). The one exception is `just smoke`, which uploads and removes its own temp file `Music/.smoke.txt`; do not hand-write other write tests, and never mount shares read-write for anything but that. Don't clear app data (`just reset`) or uninstall (`just uninstall`) without being asked, since that deletes the host key and saved keys.
+- **Never modify, delete, move, rename, overwrite or create any shared file on the phone**, over SFTP/scp/sshfs or over adb (no `adb push`, and no `rm`/`mv`/`cp`/`touch`/redirects via `adb shell` on storage; `adb pull` and read-only listing are fine). That includes everything under the shared folders and the rest of `/sdcard`. Test with read-only operations only (list, read, `stat`, download). There are no exceptions: `just smoke` is read-only (it only lists and downloads), so use it and don't hand-write write tests. `just mount` is read-write by default, so agents must mount read-only: `SSHFS_OPTS=ro just mount`. Don't clear app data (`just reset`) or uninstall (`just uninstall`) without being asked, since that deletes the host key and saved keys.
 - **Never commit secrets or machine-specific files**: `.keystore`, `*.jks`, `.envrc`, `local.properties`, `.issues/`. They are git-ignored; keep it that way.
 - **Keep `CHANGELOG.md` current.** Every user-visible change (feature, fix, behaviour or security change, notable dependency bump) gets a line under `## [Unreleased]` in the same commit. Use the Added / Changed / Fixed / Removed / Security headings. Pure refactors, docs-only and CI-only changes need no entry.
 - Keep the README accurate for newcomers; update it when behaviour, commands or requirements change.
@@ -22,7 +22,7 @@ All commands run from the repo root. `just` lists everything, grouped. Gradle 8.
 | Pair / connect wireless adb | `just pair IP:PAIRPORT`, `just connect IP:PORT` (or use USB) |
 | Build, install, grant permissions, launch | `just deploy` |
 | Logs / service errors | `just logs`, `just errors` |
-| Smoke-test the running share | `just smoke` (needs sharing on, phone on the same LAN) |
+| Read-only smoke test of the running share | `just smoke` (needs sharing on, phone on the same LAN) |
 | Mount / unmount shares | `just mount`, `just umount` |
 
 CI (`.github/workflows/ci.yml`) runs `testDebugUnitTest assembleDebug` on pushes to `master` and on pull requests. Run `just test` before committing.

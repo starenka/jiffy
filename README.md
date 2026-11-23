@@ -52,7 +52,7 @@ just deploy                # build, install, grant permissions, launch
 2. From Linux:
 
 ```sh
-just smoke                       # list + scp round-trip test
+just smoke                       # read-only check: list shares, download a small file
 just sftp                        # interactive sftp
 just mount                       # sshfs of all shares at /tmp/phone (MNT=...)
 just mount 192.168.0.50 Music    # a single share from a given IP

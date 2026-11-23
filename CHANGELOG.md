@@ -6,6 +6,9 @@ Release notes on GitHub are taken from the matching section below, so every rele
 
 ## [Unreleased]
 
+### Changed
+- `just smoke` is now read-only: it lists the shares and downloads a small file over sftp and scp instead of uploading a temp file to `/Music`.
+
 ## [1.0.0] - 2026-11-23
 
 First public release.
