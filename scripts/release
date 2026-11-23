@@ -1,0 +1,108 @@
+#!/usr/bin/env bash
+# Publish a release: scripts/release <X.Y.Z|patch|minor|major> [--dry] [--no-verify]
+#
+# Preflight (abort on failure) -> move CHANGELOG [Unreleased] under the new version and commit
+# -> ask for confirmation -> tag, push master + tag -> watch the Release workflow and verify the APK.
+# --dry       preflight and show the changelog diff only; no commit, tag or push
+# --no-verify skip watching the workflow and checking the published APK
+# See docs/RELEASING.md. Normally run as `just release ...`.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+die() { echo "release: $*" >&2; exit 1; }
+
+arg="" dry=0 verify=1
+for a in "$@"; do
+    case "$a" in
+        --dry) dry=1 ;;
+        --no-verify) verify=0 ;;
+        -*) die "unknown option $a" ;;
+        *) [ -z "$arg" ] || die "only one version argument allowed"; arg=$a ;;
+    esac
+done
+[ -n "$arg" ] || die "usage: release <X.Y.Z|patch|minor|major> [--dry] [--no-verify]"
+
+# --- version -----------------------------------------------------------------
+latest=$(git tag --list 'v[0-9]*' --sort=-v:refname | head -1)
+old=${latest#v}; old=${old:-0.0.0}
+IFS=. read -r maj min pat <<< "$old"
+case "$arg" in
+    major) ver="$((maj + 1)).0.0" ;;
+    minor) ver="$maj.$((min + 1)).0" ;;
+    patch) ver="$maj.$min.$((pat + 1))" ;;
+    *) ver=${arg#v} ;;
+esac
+[[ $ver =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || die "'$ver' is not X.Y.Z"
+[ "$(printf '%s\n%s\n' "$old" "$ver" | sort -V | tail -1)" = "$ver" ] && [ "$old" != "$ver" ] \
+    || die "$ver is not greater than the latest release ($old)"
+tag=v$ver
+
+# --- preflight ---------------------------------------------------------------
+[ "$(git branch --show-current)" = master ] || die "not on master"
+[ -z "$(git status --porcelain)" ] || die "working tree is not clean"
+git fetch -q origin master --tags
+[ "$(git rev-list --count HEAD..origin/master)" = 0 ] || die "master is behind origin/master; pull first"
+git rev-parse -q --verify "refs/tags/$tag" >/dev/null && die "tag $tag already exists locally"
+[ -z "$(git ls-remote --tags origin "refs/tags/$tag")" ] || die "tag $tag already exists on origin"
+
+grep -q '^## \[Unreleased\]$' CHANGELOG.md || die "CHANGELOG.md has no '## [Unreleased]' heading"
+unreleased=$(awk '/^## \[/{p = ($0 == "## [Unreleased]"); next} p' CHANGELOG.md)
+grep -q '[^[:space:]]' <<< "$unreleased" || die "CHANGELOG.md [Unreleased] is empty; add entries first"
+
+echo "release: $old -> $ver ($tag)"
+echo "release: running tests"
+just test >/dev/null 2>&1 || { just test 2>&1 | tail -20; die "tests failed"; }
+
+# --- changelog ---------------------------------------------------------------
+render() {
+    sed "s/^## \[Unreleased\]\$/## [Unreleased]\n\n## [$ver] - $(date +%F)/" CHANGELOG.md
+}
+if [ "$dry" = 1 ]; then
+    render | diff -u CHANGELOG.md - || true
+    echo "release: dry run OK; would commit, tag $tag and push master + $tag"
+    exit 0
+fi
+render > CHANGELOG.md.new && mv CHANGELOG.md.new CHANGELOG.md
+git add CHANGELOG.md
+git commit -q -m "Release $tag"
+
+# --- confirm -----------------------------------------------------------------
+echo
+echo "About to publish $tag. Release notes:"
+echo "------------------------------------------------------------"
+printf '%s\n' "$unreleased" | sed '/./,$!d'
+echo "------------------------------------------------------------"
+echo "This pushes: $(git rev-list --count origin/master..HEAD) commit(s) on master and tag $tag to $(git remote get-url origin)"
+if ! { read -r -p "Publish $tag? [y/N] " ans </dev/tty; } 2>/dev/null || [[ ! $ans =~ ^[Yy]$ ]]; then
+    git reset -q --hard HEAD~1
+    die "aborted; release commit undone"
+fi
+
+# --- publish -----------------------------------------------------------------
+git tag -a "$tag" -m "$tag"
+git push --atomic origin master "$tag"
+echo "release: pushed $tag"
+
+[ "$verify" = 1 ] || { echo "release: skipping verification (--no-verify)"; exit 0; }
+
+# --- verify ------------------------------------------------------------------
+redo() { echo "release: to redo: gh release delete $tag --yes --cleanup-tag; git tag -d $tag; fix, then release again (see docs/RELEASING.md)" >&2; }
+run=""
+for _ in $(seq 1 20); do
+    run=$(gh run list --workflow release.yml --branch "$tag" --limit 1 --json databaseId --jq '.[0].databaseId // empty' 2>/dev/null || true)
+    [ -n "$run" ] && break
+    sleep 3
+done
+[ -n "$run" ] || { redo; die "Release workflow run not found"; }
+gh run watch "$run" --exit-status >/dev/null || { gh run view "$run" --log-failed 2>&1 | tail -20; redo; die "Release workflow failed"; }
+
+tmp=$(mktemp -d); trap 'rm -rf "$tmp"' EXIT
+gh release download "$tag" -D "$tmp" -p '*.apk'
+sdk=${ANDROID_HOME:-$(sed -n 's/^sdk.dir=//p' local.properties 2>/dev/null)}
+apksigner=$(ls "$sdk"/build-tools/*/apksigner 2>/dev/null | sort -V | tail -1 || true)
+if [ -n "$apksigner" ]; then
+    "$apksigner" verify --print-certs "$tmp"/*.apk 2>/dev/null | grep -E 'certificate (DN|SHA-256)' || die "APK signature check failed"
+else
+    echo "release: apksigner not found; skipped signature check"
+fi
+echo "release: done: $(gh release view "$tag" --json url --jq .url)"

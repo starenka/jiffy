@@ -30,11 +30,7 @@ When testing on a real phone: add the phone's host key to `~/.ssh/known_hosts` o
 
 ## Releasing
 
-Full details are in `docs/RELEASING.md`. Summary:
+Use `just release <X.Y.Z|patch|minor|major> [--dry] [--no-verify]` (`scripts/release`). Full details are in `docs/RELEASING.md`. It checks that you're on a clean, up-to-date `master` with a non-empty `[Unreleased]` changelog section and passing tests, moves that section under the new version, commits "Release vX.Y.Z", asks for confirmation on the terminal, then tags and pushes `master` and the tag. The Release workflow (`.github/workflows/release.yml`) builds and signs the APK and creates the GitHub Release with the matching `CHANGELOG.md` section as notes; the script watches the run and verifies the APK signature.
 
-1. Move the `## [Unreleased]` entries in `CHANGELOG.md` under a new `## [X.Y.Z] - YYYY-MM-DD` heading (leave an empty `[Unreleased]` above it) and commit.
-2. When the user asks for a release: push `master`, then tag and push the tag: `git tag vX.Y.Z && git push origin vX.Y.Z`.
-3. The Release workflow (`.github/workflows/release.yml`) runs the tests, builds and signs the APK, and creates the GitHub Release automatically. The release notes are the matching `CHANGELOG.md` section; the run fails if that section is missing.
-4. Verify: `gh run watch`, then download the APK and check it with `apksigner verify --print-certs`.
-
-`versionName` comes from the tag and `versionCode` is `major*10000 + minor*100 + patch`, so versions must only go up. Never reuse a tag; if a release fails, follow the redo steps in `docs/RELEASING.md`.
+- **Only run `just release` when the user explicitly asks for a release.** Use `--dry` first. The confirmation prompt needs a real terminal; never work around it (no piping `y`, no pty tricks, no editing the script to skip it). If you can't confirm interactively, give the user the command to run themselves.
+- `versionName` comes from the tag and `versionCode` is `major*10000 + minor*100 + patch`, so versions must only go up. Never reuse a tag; if a release fails, follow the redo steps in `docs/RELEASING.md`.

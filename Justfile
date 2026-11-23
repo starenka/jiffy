@@ -137,3 +137,10 @@ mount ip=shell(phone_ip) share="":
 [group("use")]
 umount:
     fusermount3 -u {{mnt}}
+
+# --- release ---------------------------------------------------------------
+
+# Publish a release: just release 1.2.3|patch|minor|major [--dry] [--no-verify]
+[group("release")]
+release *args:
+    scripts/release {{args}}

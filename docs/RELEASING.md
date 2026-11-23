@@ -57,7 +57,18 @@ Rotate or update a secret by running the same command again.
 
 ## Publishing a release
 
-Update `CHANGELOG.md` first (see above), then:
+The easy way:
+
+```sh
+just release patch --dry     # preflight + changelog diff only
+just release patch           # or minor, major, or an explicit 1.2.3
+```
+
+It refuses to run unless you are on a clean, up-to-date `master`, the version is higher than the latest tag, `[Unreleased]` in `CHANGELOG.md` has entries and the tests pass. It then moves `[Unreleased]` under the new version, commits, shows the release notes and asks `y/N` on the terminal (no terminal means no release). On `y` it tags, pushes `master` and the tag, watches the Release workflow, and checks the published APK's signature (`--no-verify` skips the watch). If you answer `n`, the release commit is undone.
+
+The manual way, which is what the script does:
+
+Update `CHANGELOG.md` first (see above), push `master`, then:
 
 ```sh
 git tag v1.0.0
