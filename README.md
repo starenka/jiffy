@@ -32,9 +32,9 @@ It is a personal, sideloaded tool (you build and install it yourself; it is not 
 
 ## Install
 
-Download the signed APK from the [Releases page](https://github.com/starenka/jiffy/releases) and install it (allow installs from your browser or file manager). Or build it yourself:
+Download the signed APK from the [Releases page](https://github.com/starenka/jiffy/releases) and install it (allow installs from your browser or file manager).
 
-## Build and install
+## Build from source
 
 Enable *Developer options → Wireless debugging* (or USB debugging) on the phone.
 
@@ -90,9 +90,7 @@ scripts/phone-ip   finds the phone's IP (PHONE_IP, else mDNS)
 
 ## Releasing
 
-Releases are built by GitHub Actions when a `v*` tag is pushed (`git tag v1.2.3 && git push origin v1.2.3`): tests run, the APK is signed and attached to a GitHub Release. The version name comes from the tag, the version code is `major*10000 + minor*100 + patch`.
-
-One-time setup: create a keystore (`keytool -genkeypair -keystore jiffy.jks -alias jiffy -keyalg RSA -keysize 4096 -validity 10000`), back it up (losing it means nobody can update in place), and store these repository secrets: `JIFFY_KEYSTORE_BASE64` (`base64 -w0 jiffy.jks`), `JIFFY_KEYSTORE_PASSWORD`, `JIFFY_KEY_ALIAS`, `JIFFY_KEY_PASSWORD`. Local release builds read the same values from `JIFFY_KEYSTORE`, `JIFFY_KEYSTORE_PASSWORD`, `JIFFY_KEY_ALIAS`, `JIFFY_KEY_PASSWORD` environment variables.
+Pushing a `v*` tag builds a signed APK and publishes a GitHub Release. See [docs/RELEASING.md](docs/RELEASING.md) for the full process and one-time setup.
 
 ## License
 
