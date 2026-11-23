@@ -6,6 +6,8 @@ Release notes on GitHub are taken from the matching section below, so every rele
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-11-24
+
 ### Changed
 - Updated dependencies: Apache MINA SSHD 2.15.0 → 2.20.1, BouncyCastle 1.80 → 1.87, Kotlin 2.1.21 → 2.4.21, and the GitHub Actions used in CI and releases.
 
