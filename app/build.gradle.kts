@@ -19,15 +19,30 @@ android {
         applicationId = "cz.starenka.jiffy"
         minSdk = 30
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        // Overridden by the release workflow (see .github/workflows/release.yml).
+        versionCode = System.getenv("VERSION_CODE")?.toIntOrNull() ?: 1
+        versionName = System.getenv("VERSION_NAME") ?: "1.0"
         buildConfigField("String", "GIT_REV", "\"${gitRev.get()}\"")
         buildConfigField("String", "BUILD_TIME",
             "\"${OffsetDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))}\"")
     }
     buildFeatures { buildConfig = true }
+    // Release signing comes from the environment so no secrets live in the repo:
+    // JIFFY_KEYSTORE (path), JIFFY_KEYSTORE_PASSWORD, JIFFY_KEY_ALIAS, JIFFY_KEY_PASSWORD.
+    val releaseKeystore = System.getenv("JIFFY_KEYSTORE")
+    signingConfigs {
+        if (releaseKeystore != null) create("release") {
+            storeFile = file(releaseKeystore)
+            storePassword = System.getenv("JIFFY_KEYSTORE_PASSWORD")
+            keyAlias = System.getenv("JIFFY_KEY_ALIAS")
+            keyPassword = System.getenv("JIFFY_KEY_PASSWORD")
+        }
+    }
     buildTypes {
-        release { isMinifyEnabled = false }
+        release {
+            isMinifyEnabled = false
+            if (releaseKeystore != null) signingConfig = signingConfigs.getByName("release")
+        }
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17

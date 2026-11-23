@@ -30,6 +30,10 @@ It is a personal, sideloaded tool (you build and install it yourself; it is not 
 - Android 11+ (developed on Android 17, arm64). The app needs *All files access*.
 - Build: JDK 17/21 (Gradle 8.13 can't run on JDK 25), Android SDK with build-tools 36.0.0, [`just`](https://github.com/casey/just), `adb`.
 
+## Install
+
+Download the signed APK from the [Releases page](https://github.com/starenka/jiffy/releases) and install it (allow installs from your browser or file manager). Or build it yourself:
+
 ## Build and install
 
 Enable *Developer options → Wireless debugging* (or USB debugging) on the phone.
@@ -68,7 +72,7 @@ While sharing, the app advertises a `jiffy-<id>` `_ssh._tcp` mDNS service on the
 - Throughput depends on the Wi-Fi link; 5 GHz or a nearby AP matters far more than anything in the app.
 - Midnight Commander on an sshfs mount may show "Cannot set ext2 attributes". That's the kernel's FUSE layer rejecting an ioctl, not a server problem. Disable *Preserve attributes* in the copy dialog or ignore it.
 - Symlinks can't be created on shared storage, so there's no symlink-escape path.
-- Intended for personal, sideloaded use on a trusted LAN. Debug build only.
+- Intended for personal, sideloaded use on a trusted LAN.
 
 ## Layout
 
@@ -83,6 +87,12 @@ app/src/main/kotlin/cz/starenka/jiffy/
 Justfile           build / deploy / test helpers
 scripts/phone-ip   finds the phone's IP (PHONE_IP, else mDNS)
 ```
+
+## Releasing
+
+Releases are built by GitHub Actions when a `v*` tag is pushed (`git tag v1.2.3 && git push origin v1.2.3`): tests run, the APK is signed and attached to a GitHub Release. The version name comes from the tag, the version code is `major*10000 + minor*100 + patch`.
+
+One-time setup: create a keystore (`keytool -genkeypair -keystore jiffy.jks -alias jiffy -keyalg RSA -keysize 4096 -validity 10000`), back it up (losing it means nobody can update in place), and store these repository secrets: `JIFFY_KEYSTORE_BASE64` (`base64 -w0 jiffy.jks`), `JIFFY_KEYSTORE_PASSWORD`, `JIFFY_KEY_ALIAS`, `JIFFY_KEY_PASSWORD`. Local release builds read the same values from `JIFFY_KEYSTORE`, `JIFFY_KEYSTORE_PASSWORD`, `JIFFY_KEY_ALIAS`, `JIFFY_KEY_PASSWORD` environment variables.
 
 ## License
 
