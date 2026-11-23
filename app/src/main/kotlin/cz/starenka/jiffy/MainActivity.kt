@@ -62,12 +62,12 @@ class MainActivity : Activity() {
         }
         col.addView(storage, MATCH_PARENT, WRAP_CONTENT)
 
-        col.addView(header("Shared folders"))
+        col.addView(header("Shared directories"))
         shareList = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         col.addView(shareList, MATCH_PARENT, WRAP_CONTENT)
         renderShares()
-        col.addView(Button(this).apply { text = "Add folder"; setOnClickListener { addShareDialog() } }, MATCH_PARENT, WRAP_CONTENT)
-        col.addView(note("Tap a folder path to change it. Added folders can be removed (files are never deleted). Changes apply to new connections."))
+        col.addView(Button(this).apply { text = "Add directory"; setOnClickListener { addShareDialog() } }, MATCH_PARENT, WRAP_CONTENT)
+        col.addView(note("Tap a directory path to change it. Added directories can be removed (files are never deleted). Changes apply to new connections."))
 
         col.addView(header("Authorized keys"))
         keyInput = EditText(this).apply {
@@ -134,9 +134,9 @@ class MainActivity : Activity() {
             inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS or android.text.InputType.TYPE_TEXT_VARIATION_URI
         }
         val name = field("Name, e.g. Podcasts")
-        val path = field("Absolute folder path", "/storage/emulated/0/")
+        val path = field("Absolute directory path", "/storage/emulated/0/")
         val form = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(20), dp(8), dp(20), 0); addView(name); addView(path) }
-        val dialog = AlertDialog.Builder(this).setTitle("Add a shared folder").setView(form)
+        val dialog = AlertDialog.Builder(this).setTitle("Add a shared directory").setView(form)
             .setNegativeButton("Cancel", null).setPositiveButton("Add", null).show()
         dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
             val resolved = try {
@@ -148,13 +148,13 @@ class MainActivity : Activity() {
             } catch (e: NotDirectoryException) {
                 path.error = "Not a directory"; return@setOnClickListener
             } catch (e: IOException) {
-                path.error = "Cannot open folder: ${e.message}"; return@setOnClickListener
+                path.error = "Cannot open directory: ${e.message}"; return@setOnClickListener
             } catch (e: SecurityException) {
                 path.error = "Permission denied"; return@setOnClickListener
             }
             if (resolved != path.text.toString()) {
                 path.setText(resolved)
-                path.error = "Resolved folder shown. Tap Add to confirm."
+                path.error = "Resolved directory shown. Tap Add to confirm."
                 return@setOnClickListener
             }
             renderShares()
@@ -168,7 +168,7 @@ class MainActivity : Activity() {
             inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS or android.text.InputType.TYPE_TEXT_VARIATION_URI
             setText(Config.path(this@MainActivity, share))
         }
-        val dialog = AlertDialog.Builder(this).setTitle("Folder for /${share.name}").setView(draft)
+        val dialog = AlertDialog.Builder(this).setTitle("Directory for /${share.name}").setView(draft)
             .setNegativeButton("Cancel", null).setPositiveButton("Save", null).show()
         dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
             val path = try {
@@ -178,13 +178,13 @@ class MainActivity : Activity() {
             } catch (e: NotDirectoryException) {
                 draft.error = "Not a directory"; return@setOnClickListener
             } catch (e: IOException) {
-                draft.error = "Cannot open folder: ${e.message}"; return@setOnClickListener
+                draft.error = "Cannot open directory: ${e.message}"; return@setOnClickListener
             } catch (e: SecurityException) {
                 draft.error = "Permission denied"; return@setOnClickListener
             }
             if (path != draft.text.toString()) {
                 draft.setText(path)
-                draft.error = "Resolved folder shown. Tap Save to confirm."
+                draft.error = "Resolved directory shown. Tap Save to confirm."
                 return@setOnClickListener
             }
             button.text = path

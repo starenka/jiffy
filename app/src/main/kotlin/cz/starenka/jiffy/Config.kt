@@ -60,13 +60,13 @@ object Config {
     /** Built-in shares followed by the owner's custom shares, in the order added. */
     fun shares(c: Context): List<Share> = SHARES + customRaw(c).map { (name, path) -> Share(name, path, true, custom = true) }
 
-    /** Validates the name, then (like [confirmPath]) saves only a confirmed resolved folder. Returns the resolved folder. */
+    /** Validates the name, then (like [confirmPath]) saves only a confirmed resolved directory. Returns the resolved directory. */
     fun addShare(c: Context, name: String, draft: String): String {
         checkShareName(name, shares(c).map { it.name })?.let { throw IllegalArgumentException(it) }
         return confirmDirectory(draft) { saveCustom(c, customRaw(c) + (name to it)) }
     }
 
-    /** Removes a custom share's configuration. The folder and its files are untouched. */
+    /** Removes a custom share's configuration. The directory and its files are untouched. */
     fun removeShare(c: Context, s: Share) {
         if (!s.custom) return
         saveCustom(c, customRaw(c).filterNot { it.first == s.name })
@@ -85,7 +85,7 @@ object Config {
     /** Return the resolved directory for display; publish it only when the owner submits that exact path. */
     internal fun confirmDirectory(draft: String, publish: (String) -> Unit): String {
         val path = Paths.get(draft)
-        if (!path.isAbsolute) throw InvalidPathException(draft, "Enter an absolute folder path")
+        if (!path.isAbsolute) throw InvalidPathException(draft, "Enter an absolute directory path")
         val real = path.toRealPath()
         if (!Files.isDirectory(real)) throw NotDirectoryException(draft)
         val resolved = real.toString()

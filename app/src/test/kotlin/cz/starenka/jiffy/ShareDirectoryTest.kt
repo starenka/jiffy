@@ -8,10 +8,10 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 
-class ShareFolderTest {
+class ShareDirectoryTest {
     @get:Rule val temp = TemporaryFolder()
 
-    @Test fun resolvedFolderMustBeConfirmedBeforeReplacingActiveShare() {
+    @Test fun resolvedDirectoryMustBeConfirmedBeforeReplacingActiveShare() {
         var active = temp.newFolder().canonicalPath
         val original = active
         val next = temp.newFolder().canonicalPath
@@ -22,8 +22,8 @@ class ShareFolderTest {
         assertEquals(next, active)
     }
 
-    @Test fun invalidFoldersNeverReplaceTheActiveShare() {
-        val publish: (String) -> Unit = { fail("Invalid folder was published") }
+    @Test fun invalidDirectoriesNeverReplaceTheActiveShare() {
+        val publish: (String) -> Unit = { fail("Invalid directory was published") }
         assertThrows(InvalidPathException::class.java) { Config.confirmDirectory("", publish) }
         assertThrows(NoSuchFileException::class.java) { Config.confirmDirectory("${temp.root}/missing", publish) }
         assertThrows(NotDirectoryException::class.java) { Config.confirmDirectory(temp.newFile().path, publish) }
