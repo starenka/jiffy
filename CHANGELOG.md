@@ -6,6 +6,10 @@ Release notes on GitHub are taken from the matching section below, so every rele
 
 ## [Unreleased]
 
+### Security
+- The app no longer allows cleartext (HTTP) traffic; it only ever needed HTTPS (GitHub key import).
+- The Gradle wrapper is regenerated with the official Gradle 8.13 (it was an 8.10.2 jar); GitHub Actions are pinned to commit SHAs and kept current by Dependabot.
+
 ## [1.1.0] - 2026-11-23
 
 ### Added
